@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>게시판</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      font-family: 'Segoe UI', sans-serif;
+      color: #e2e8f0;
+    }
+
+    /* ── header ── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(15,12,41,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 0 24px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo { font-size: 1.1rem; font-weight: 700; cursor: pointer;
+      background: linear-gradient(90deg,#6ee7f7,#a78bfa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .user-name { font-size: 0.85rem; color: #94a3b8; }
+
+    /* ── main ── */
+    .main { max-width: 860px; margin: 0 auto; padding: 32px 16px 80px; }
+
+    /* ── glass card ── */
+    .card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px; padding: 28px 32px;
+      backdrop-filter: blur(12px);
+    }
+
+    /* ── buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 18px; border-radius: 8px;
+      font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; border: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover  { opacity: 0.85; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: linear-gradient(135deg,#6ee7f7,#a78bfa); color: #1e1b4b; }
+    .btn-ghost   { background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.12); }
+    .btn-danger  { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid rgba(248,113,113,0.25); }
+    .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+
+    /* ── page header ── */
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .page-title  { font-size: 1.35rem; font-weight: 700; color: #f1f5f9; }
+    .page-count  { font-size: 0.8rem; color: #64748b; margin-top: 2px; }
+
+    /* ── post list ── */
+    .post-list { display: flex; flex-direction: column; gap: 10px; }
+    .post-item {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 16px 20px;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    }
+    .post-item:hover { background: rgba(110,231,247,0.06); border-color: rgba(110,231,247,0.25); }
+    .post-item-left  { flex: 1; min-width: 0; }
+    .post-item-title { font-size: 1rem; font-weight: 600; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .post-item-meta  { font-size: 0.78rem; color: #64748b; margin-top: 4px; }
+    .post-item-id    { font-size: 0.78rem; color: #475569; white-space: nowrap; }
+
+    /* ── form ── */
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 0.82rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; }
+    input, textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px; padding: 10px 14px;
+      color: #f1f5f9; font-size: 0.9rem; font-family: inherit;
+      outline: none; transition: border-color 0.15s;
+    }
+    input:focus, textarea:focus { border-color: rgba(110,231,247,0.5); }
+    textarea { min-height: 160px; resize: vertical; }
+    .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+    .form-error { font-size: 0.82rem; color: #f87171; margin-top: 8px; min-height: 1.2em; }
+
+    /* ── detail ── */
+    .detail-title   { font-size: 1.5rem; font-weight: 700; color: #f1f5f9; line-height: 1.4; margin-bottom: 10px; }
+    .detail-meta    { font-size: 0.82rem; color: #64748b; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .detail-content { font-size: 0.95rem; color: #cbd5e1; line-height: 1.8; white-space: pre-wrap; word-break: break-word; }
+    .detail-actions { display: flex; gap: 10px; margin-top: 28px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+
+    /* ── empty ── */
+    .empty { text-align: center; padding: 60px 0; color: #475569; }
+    .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty-text { font-size: 0.9rem; }
+
+    /* ── back ── */
+    .back { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: #64748b; font-size: 0.85rem; margin-bottom: 20px; }
+    .back:hover { color: #94a3b8; }
+
+    /* ── toast ── */
+    #toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(52,211,153,0.18); border: 1px solid rgba(52,211,153,0.35);
+      color: #34d399; padding: 10px 22px; border-radius: 999px;
+      font-size: 0.85rem; font-weight: 600;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── modal overlay ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: rgba(30,27,75,0.95);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px; padding: 36px 40px;
+      width: 100%; max-width: 400px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+      transform: translateY(16px);
+      transition: transform 0.2s;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-title {
+      font-size: 1.25rem; font-weight: 700; margin-bottom: 24px;
+      background: linear-gradient(90deg,#6ee7f7,#a78bfa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .modal-hint { font-size: 0.78rem; color: #475569; margin-top: 16px; text-align: center; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo" onclick="showList()">📋 게시판</span>
+  <div class="header-right" id="header-auth">
+    <button class="btn btn-ghost btn-sm" onclick="openLoginModal()">로그인</button>
+  </div>
+</header>
+
+<div class="main" id="app"></div>
+<div id="toast"></div>
+
+<!-- 로그인 모달 -->
+<div class="modal-overlay" id="loginModal" onclick="onOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-title">🔐 로그인</div>
+    <div class="form-group">
+      <label>아이디</label>
+      <input id="m-username" placeholder="아이디를 입력하세요" onkeydown="onLoginKey(event)" />
+    </div>
+    <div class="form-group">
+      <label>비밀번호</label>
+      <input id="m-password" type="password" placeholder="비밀번호를 입력하세요" onkeydown="onLoginKey(event)" />
+    </div>
+    <div class="form-error" id="m-error"></div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeLoginModal()">취소</button>
+      <button class="btn btn-primary" onclick="submitLogin()">로그인</button>
+    </div>
+    <div class="modal-hint">기본 계정: admin / 1234</div>
+  </div>
+</div>
+
+<script>
+  /* ── 상태 ── */
+  let currentUser = null;
+
+  /* ── API ── */
+  const api = {
+    list:   ()        => fetch('/api/posts').then(r => r.json()),
+    get:    id        => fetch(`/api/posts/${id}`).then(r => r.json()),
+    create: body      => fetch('/api/posts', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }),
+    update: (id,body) => fetch(`/api/posts/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }),
+    delete: id        => fetch(`/api/posts/${id}`, { method:'DELETE' }),
+    me:     ()        => fetch('/api/auth/me').then(r => r.status === 204 ? null : r.json()),
+    login:  body      => fetch('/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }),
+    logout: ()        => fetch('/api/auth/logout', { method:'POST' }),
+  };
+
+  /* ── 인증 체크 (401 처리) ── */
+  async function guardedRequest(fn) {
+    const res = await fn();
+    if (res.status === 401) {
+      openLoginModal('로그인이 필요합니다.');
+      return null;
+    }
+    return res;
+  }
+
+  /* ── 헤더 업데이트 ── */
+  function updateHeader() {
+    const el = document.getElementById('header-auth');
+    if (currentUser) {
+      el.innerHTML = `
+        <span class="user-name">안녕하세요, <strong style="color:#a78bfa">${esc(currentUser.username)}</strong>님</span>
+        <button class="btn btn-ghost btn-sm" onclick="doLogout()">로그아웃</button>`;
+    } else {
+      el.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="openLoginModal()">로그인</button>`;
+    }
+  }
+
+  /* ── 로그인 모달 ── */
+  function openLoginModal(msg = '') {
+    document.getElementById('m-username').value = '';
+    document.getElementById('m-password').value = '';
+    document.getElementById('m-error').textContent = msg;
+    document.getElementById('loginModal').classList.add('open');
+    setTimeout(() => document.getElementById('m-username').focus(), 100);
+  }
+  function closeLoginModal() {
+    document.getElementById('loginModal').classList.remove('open');
+  }
+  function onOverlayClick(e) {
+    if (e.target === document.getElementById('loginModal')) closeLoginModal();
+  }
+  function onLoginKey(e) {
+    if (e.key === 'Enter') submitLogin();
+  }
+
+  async function submitLogin() {
+    const username = document.getElementById('m-username').value.trim();
+    const password = document.getElementById('m-password').value;
+    if (!username || !password) {
+      document.getElementById('m-error').textContent = '아이디와 비밀번호를 입력하세요.';
+      return;
+    }
+    const res = await api.login({ username, password });
+    if (res.ok) {
+      currentUser = await res.json();
+      updateHeader();
+      closeLoginModal();
+      toast('로그인됐습니다 ✓');
+      showList();
+    } else {
+      const data = await res.json();
+      document.getElementById('m-error').textContent = data.error || '로그인에 실패했습니다.';
+    }
+  }
+
+  async function doLogout() {
+    await api.logout();
+    currentUser = null;
+    updateHeader();
+    toast('로그아웃됐습니다');
+    showList();
+  }
+
+  /* ── 목록 ── */
+  async function showList() {
+    const posts = await api.list();
+    const sorted = [...posts].sort((a,b) => b.id - a.id);
+    document.getElementById('app').innerHTML = `
+      <div class="page-header">
+        <div>
+          <div class="page-title">전체 게시글</div>
+          <div class="page-count">총 ${posts.length}개</div>
+        </div>
+        ${currentUser ? `<button class="btn btn-primary" onclick="showForm()">✏️ 글쓰기</button>` : ''}
+      </div>
+      <div class="card">
+        ${sorted.length === 0
+          ? `<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">아직 게시글이 없습니다.<br/>첫 번째 글을 작성해 보세요!</div></div>`
+          : `<div class="post-list">${sorted.map(p => `
+              <div class="post-item" onclick="showDetail(${p.id})">
+                <div class="post-item-left">
+                  <div class="post-item-title">${esc(p.title)}</div>
+                  <div class="post-item-meta">${esc(p.author)} · ${fmt(p.createdAt)}</div>
+                </div>
+                <div class="post-item-id">#${p.id}</div>
+              </div>`).join('')}
+            </div>`
+        }
+      </div>`;
+  }
+
+  /* ── 상세 ── */
+  async function showDetail(id) {
+    const p = await api.get(id);
+    document.getElementById('app').innerHTML = `
+      <div class="back" onclick="showList()">← 목록으로</div>
+      <div class="card">
+        <div class="detail-title">${esc(p.title)}</div>
+        <div class="detail-meta">
+          작성자: <strong style="color:#94a3b8">${esc(p.author)}</strong>
+          &nbsp;·&nbsp; 작성: ${fmt(p.createdAt)}
+          ${p.updatedAt !== p.createdAt ? `&nbsp;·&nbsp; 수정: ${fmt(p.updatedAt)}` : ''}
+        </div>
+        <div class="detail-content">${esc(p.content)}</div>
+        <div class="detail-actions">
+          ${currentUser ? `
+            <button class="btn btn-ghost" onclick="showEditForm(${p.id})">✏️ 수정</button>
+            <button class="btn btn-danger" onclick="confirmDelete(${p.id})">🗑️ 삭제</button>
+          ` : ''}
+          <button class="btn btn-ghost" style="margin-left:auto" onclick="showList()">목록</button>
+        </div>
+      </div>`;
+  }
+
+  /* ── 글쓰기 ── */
+  function showForm() {
+    document.getElementById('app').innerHTML = `
+      <div class="back" onclick="showList()">← 목록으로</div>
+      <div class="card">
+        <div class="page-title" style="margin-bottom:24px">✏️ 글쓰기</div>
+        <div class="form-group">
+          <label>제목</label>
+          <input id="f-title" placeholder="제목을 입력하세요" />
+        </div>
+        <div class="form-group">
+          <label>작성자</label>
+          <input id="f-author" value="${esc(currentUser?.username || '')}" />
+        </div>
+        <div class="form-group">
+          <label>내용</label>
+          <textarea id="f-content" placeholder="내용을 입력하세요"></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" onclick="showList()">취소</button>
+          <button class="btn btn-primary" onclick="submitCreate()">등록</button>
+        </div>
+      </div>`;
+  }
+
+  async function submitCreate() {
+    const title   = document.getElementById('f-title').value.trim();
+    const author  = document.getElementById('f-author').value.trim();
+    const content = document.getElementById('f-content').value.trim();
+    if (!title || !author || !content) { alert('모든 항목을 입력해주세요.'); return; }
+    const res = await guardedRequest(() => api.create({ title, author, content }));
+    if (!res) return;
+    toast('게시글이 등록됐습니다 ✓');
+    showList();
+  }
+
+  /* ── 수정 ── */
+  async function showEditForm(id) {
+    const p = await api.get(id);
+    document.getElementById('app').innerHTML = `
+      <div class="back" onclick="showDetail(${id})">← 돌아가기</div>
+      <div class="card">
+        <div class="page-title" style="margin-bottom:24px">✏️ 수정</div>
+        <div class="form-group">
+          <label>제목</label>
+          <input id="e-title" value="${esc(p.title)}" />
+        </div>
+        <div class="form-group">
+          <label>작성자</label>
+          <input id="e-author" value="${esc(p.author)}" />
+        </div>
+        <div class="form-group">
+          <label>내용</label>
+          <textarea id="e-content">${esc(p.content)}</textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" onclick="showDetail(${id})">취소</button>
+          <button class="btn btn-primary" onclick="submitEdit(${id})">저장</button>
+        </div>
+      </div>`;
+  }
+
+  async function submitEdit(id) {
+    const title   = document.getElementById('e-title').value.trim();
+    const author  = document.getElementById('e-author').value.trim();
+    const content = document.getElementById('e-content').value.trim();
+    if (!title || !author || !content) { alert('모든 항목을 입력해주세요.'); return; }
+    const res = await guardedRequest(() => api.update(id, { title, author, content }));
+    if (!res) return;
+    toast('수정됐습니다 ✓');
+    showDetail(id);
+  }
+
+  /* ── 삭제 ── */
+  async function confirmDelete(id) {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+    const res = await guardedRequest(() => api.delete(id));
+    if (!res) return;
+    toast('삭제됐습니다');
+    showList();
+  }
+
+  /* ── 유틸 ── */
+  function fmt(str) {
+    const d = new Date(str);
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  }
+  function esc(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  /* ── 초기화 ── */
+  async function init() {
+    try {
+      currentUser = await api.me();
+    } catch (e) {
+      currentUser = null;
+    }
+    updateHeader();
+    showList();
+  }
+
+  init();
+</script>
+</body>
+</html>
